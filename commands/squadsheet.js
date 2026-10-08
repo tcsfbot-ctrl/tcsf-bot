@@ -24,10 +24,12 @@ module.exports = {
       });
     }
 
-    const members = [...teamRole.members.values()]
+    const guildMembers = await interaction.guild.members.fetch();
+    const members = [...guildMembers.values()]
+      .filter(member => member.roles.cache.has(teamRole.id))
       .sort((a, b) => a.user.username.localeCompare(b.user.username));
     const roster = members.length
-      ? members.map(member => `• ${member}`).join('\n')
+      ? members.map(member => `• <@${member.id}>`).join('\n')
       : 'Nenhum jogador está no elenco deste time.';
 
     const embed = new EmbedBuilder()
