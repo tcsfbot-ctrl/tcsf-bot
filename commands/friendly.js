@@ -1,5 +1,9 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
-const { ALLOWED_FRIENDLY_CHANNELS, FRIENDLY_ANNOUNCEMENT_CHANNEL } = require('../config/constants');
+const {
+  ALLOWED_FRIENDLY_CHANNELS,
+  FRIENDLY_ANNOUNCEMENT_CHANNEL,
+  ALLOWED_COMMAND_ROLES
+} = require('../config/constants');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,6 +21,15 @@ module.exports = {
     if (!interaction.inGuild() || !ALLOWED_FRIENDLY_CHANNELS.includes(interaction.channelId)) {
       return interaction.editReply({
         content: `❌ Use este comando no canal <#${ALLOWED_FRIENDLY_CHANNELS[0]}>.`
+      });
+    }
+
+    const hasAllowedRole = ALLOWED_COMMAND_ROLES.some(roleId =>
+      interaction.member.roles.cache.has(roleId)
+    );
+    if (!hasAllowedRole) {
+      return interaction.editReply({
+        content: '❌ Você não tem permissão para usar este comando.'
       });
     }
 
