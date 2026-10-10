@@ -24,24 +24,65 @@ module.exports = {
       });
     }
 
-    const guildMembers = await interaction.guild.members.fetch();
-    const members = [...guildMembers.values()]
-      .filter(member => member.roles.cache.has(teamRole.id))
-      .sort((a, b) => a.user.username.localeCompare(b.user.username));
-    const roster = members.length
-      ? members.map(member => `• <@${member.id}>`).join('\n')
-      : 'Nenhum jogador está no elenco deste time.';
+    const members = [];
+    let after;
 
-    const embed = new EmbedBuilder()
-      .setColor(teamRole.color || 0x5865f2)
-      .setTitle(`📋 Elenco — ${teamName}`)
-      .setDescription(roster)
-      .setFooter({ text: `${members.length} jogador(es)` })
-      .setTimestamp();
+    do {
+      const page = await interaction.guild.members.list({
+        after,
+        limit: 1000,
+        cache: false
+      });
 
-    return interaction.editReply({
-      embeds: [embed],
+      members.push(...[...page.values()].filter(member => member.roles.cache.has(teamRole.id)));
+
+      if (page.size < 1000) break;
+      after = page.lastKey();
+    } while (after);
+
+    members.sort((a, b) => a.user.username.localeCompare(b.user.username));
+
+    const lines = members.length
+      ? members.map(member => `• <@${member.id}>`)
+      : ['Nenhum jogador está no elenco deste time.'];
+    const pages = [];
+    let currentPage = [];
+    let currentLength = 0;
+
+    for (const line of lines) {
+      if (currentLength + line.length + (currentPage.length ? 1 : 0) > 3500) {
+        pages.push(currentPage.join('\n'));
+        currentPage = [];
+        currentLength = 0;
+      }
+
+      currentPage.push(line);
+      currentLength += line.length + (currentPage.length > 1 ? 1 : 0);
+    }
+
+    if (currentPage.length) pages.push(currentPage.join('\n'));
+
+    const embeds = pages.map((roster, index) =>
+      new EmbedBuilder()
+        .setColor(teamRole.color || 0x5865f2)
+        .setTitle(`📋 Elenco — ${teamName}`)
+        .setDescription(roster)
+        .setFooter({
+          text: `${members.length} jogador(es)${pages.length > 1 ? ` • Página ${index + 1}/${pages.length}` : ''}`
+        })
+        .setTimestamp()
+    );
+
+    await interaction.editReply({
+      embeds: [embeds[0]],
       allowedMentions: { parse: [] }
     });
+
+    for (const embed of embeds.slice(1)) {
+      await interaction.followUp({
+        embeds: [embed],
+        allowedMentions: { parse: [] }
+      });
+    }
   }
 };
