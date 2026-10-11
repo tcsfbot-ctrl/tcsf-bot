@@ -62,14 +62,18 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedValue = interaction.options.getFocused().toLocaleLowerCase();
-    const choices = interaction.guild
-      ? interaction.guild.roles.cache
-        .filter(role => ALLOWED_TEAM_ROLE_NAMES.includes(role.name))
-        .map(role => role.name)
-        .filter(name => name.toLocaleLowerCase().includes(focusedValue))
-        .slice(0, 25)
-      : [];
+    const guild = interaction.guild;
+    if (!guild) {
+      return interaction.respond([]);
+    }
+
+    const focusedValue = interaction.options.getFocused().toLowerCase();
+    const roles = await guild.roles.fetch();
+    const choices = roles
+      .filter(role => ALLOWED_TEAM_ROLE_NAMES.includes(role.name))
+      .map(role => role.name)
+      .filter(name => name.toLowerCase().includes(focusedValue))
+      .slice(0, 25);
 
     await interaction.respond(choices.map(name => ({ name, value: name })));
   },
