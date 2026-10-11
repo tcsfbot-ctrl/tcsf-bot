@@ -7,7 +7,23 @@ const { buildTransferWindowEmbed, buildTransferWindowSelectMenu } = require('../
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
-    if (interaction.isChatInputCommand()) {
+    if (interaction.isAutocomplete()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command?.autocomplete) return interaction.respond([]);
+
+      try {
+        await command.autocomplete(interaction, client);
+      } catch (error) {
+        console.error(`Erro no autocomplete do comando ${interaction.commandName}:`, error);
+        if (!interaction.responded) {
+          try {
+            await interaction.respond([]);
+          } catch (responseError) {
+            console.error(`Erro ao responder autocomplete do comando ${interaction.commandName}:`, responseError);
+          }
+        }
+      }
+    } else if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
 
