@@ -5,61 +5,77 @@ const {
   RESULT_DRAFT_CHANNEL_ID
 } = require('../config/constants');
 
+const data = new SlashCommandBuilder()
+  .setName('result')
+  .setDescription('Publica o resultado de uma partida (apenas officials).')
+  .addStringOption(option =>
+    option.setName('home')
+      .setDescription('Time mandante')
+      .setRequired(true)
+      .setAutocomplete(true)
+  )
+  .addStringOption(option =>
+    option.setName('away')
+      .setDescription('Time visitante')
+      .setRequired(true)
+      .setAutocomplete(true)
+  )
+  .addStringOption(option =>
+    option.setName('competicao')
+      .setDescription('Competição da partida')
+      .setRequired(true)
+  )
+  .addStringOption(option =>
+    option.setName('fase')
+      .setDescription('Fase da competição')
+      .setRequired(true)
+  )
+  .addStringOption(option =>
+    option.setName('resultado')
+      .setDescription('Placar da partida (ex.: 2-1)')
+      .setRequired(true)
+  )
+  .addStringOption(option =>
+    option.setName('estadio')
+      .setDescription('Estádio da partida')
+      .setRequired(true)
+  )
+  .addStringOption(option =>
+    option.setName('officials')
+      .setDescription('Officials extras para mencionar (ex.: @user1 @user2)')
+      .setRequired(false)
+  )
+  .addStringOption(option =>
+    option.setName('leg')
+      .setDescription('Perna da partida, se for ida e volta')
+      .setRequired(false)
+      .addChoices(
+        { name: '1st Leg', value: '1st Leg' },
+        { name: '2nd Leg', value: '2nd Leg' }
+      )
+  )
+  .addStringOption(option =>
+    option.setName('agregado')
+      .setDescription('Placar agregado (ex.: 1-4), se for ida e volta')
+      .setRequired(false)
+  );
+
+for (let index = 1; index <= 10; index += 1) {
+  data.addStringOption(option =>
+    option.setName(`subs${index}`)
+      .setDescription(`Substituto ${index}`)
+      .setRequired(false)
+  );
+}
+
+data.addStringOption(option =>
+  option.setName('statistics')
+    .setDescription('Elenco e eventos da partida em texto (gols, cartões, minutos etc.)')
+    .setRequired(false)
+);
+
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('result')
-    .setDescription('Publica o resultado de uma partida (apenas officials).')
-    .addStringOption(option =>
-      option.setName('home')
-        .setDescription('Time mandante')
-        .setRequired(true)
-        .setAutocomplete(true)
-    )
-    .addStringOption(option =>
-      option.setName('away')
-        .setDescription('Time visitante')
-        .setRequired(true)
-        .setAutocomplete(true)
-    )
-    .addStringOption(option =>
-      option.setName('competicao')
-        .setDescription('Competição da partida')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('fase')
-        .setDescription('Fase da competição')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('resultado')
-        .setDescription('Placar da partida (ex.: 2-1)')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('estadio')
-        .setDescription('Estádio da partida')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('officials')
-        .setDescription('Officials extras para mencionar (ex.: @user1 @user2)')
-        .setRequired(false)
-    )
-    .addStringOption(option =>
-      option.setName('leg')
-        .setDescription('Perna da partida, se for ida e volta')
-        .setRequired(false)
-        .addChoices(
-          { name: '1st Leg', value: '1st Leg' },
-          { name: '2nd Leg', value: '2nd Leg' }
-        )
-    )
-    .addStringOption(option =>
-      option.setName('agregado')
-        .setDescription('Placar agregado (ex.: 1-4), se for ida e volta')
-        .setRequired(false)
-    ),
+  data,
 
   async autocomplete(interaction) {
     const guild = interaction.guild;
@@ -124,6 +140,11 @@ module.exports = {
     const officials = officialIds.map(id => `<@${id}>`);
     const leg = interaction.options.getString('leg');
     const aggregate = interaction.options.getString('agregado');
+    const substitutes = Array.from({ length: 10 }, (_, index) => ({
+      number: index + 1,
+      name: interaction.options.getString(`subs${index + 1}`)?.trim()
+    })).filter(substitute => substitute.name);
+    const statistics = interaction.options.getString('statistics')?.trim();
     const matchDetails = [
       '🏆 RASCUNHO DE RESULTADO',
       `**Partida:** ${homeRole.name} ${interaction.options.getString('resultado')} ${awayRole.name}`,
@@ -133,8 +154,18 @@ module.exports = {
       `**Estádio:** ${interaction.options.getString('estadio')}`,
       ...(leg ? [`**Leg:** ${leg}`] : []),
       ...(aggregate ? [`**Agregado:** ${aggregate}`] : []),
+      ...(substitutes.length
+        ? ['', '**SUBS**', ...substitutes.map(substitute => `**${substitute.number}.** ${substitute.name}`)]
+        : []),
+      ...(statistics ? ['', '**STATISTICS**', statistics] : []),
       `**Officials:** ${officials.join(' ')}`
     ];
+    const messageContent = matchDetails.join('\n');
+    if (messageContent.length > 2000) {
+      return interaction.editReply({
+        content: '❌ O rascunho ultrapassa o limite de 2.000 caracteres do Discord. Reduza o texto de `statistics` ou a quantidade de informações.'
+      });
+    }
 
     const channel = await interaction.guild.channels.fetch(RESULT_DRAFT_CHANNEL_ID);
     if (!channel?.isTextBased() || typeof channel.send !== 'function') {
@@ -144,8 +175,8 @@ module.exports = {
     }
 
     await channel.send({
-      content: matchDetails.join('\n'),
-      allowedMentions: { users: officialIds }
+      content: messageContent,
+      allowedMentions: { parse: [], users: officialIds }
     });
 
     return interaction.editReply({
