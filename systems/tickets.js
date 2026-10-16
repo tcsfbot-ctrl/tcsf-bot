@@ -32,29 +32,12 @@ const TICKET_TYPES = [
 function buildPanelPayload() {
   const embed = new EmbedBuilder()
     .setColor(0x2ecc71)
-    .setTitle('PCS Ticket Support')
+    .setTitle('TCSF Support')
     .setDescription([
       '**Precisa de ajuda?**',
       'Abra um ticket e nossa equipe irá atendê-lo assim que possível.',
       '',
-      'Para appeals e denúncias, utilize o servidor do STJD.',
-      '',
-      'Somente aceitamos **PARTNERSHIPS pagas**. Confira a tabela de preços:',
-      '',
-      '**CRIAR CANAL SEPARADO COM O NOME DA LIGA** (tipo `#unknown`)',
-      'here: 14200 🪙 230 💎',
-      'everyone: 15500 🪙 255 💎',
-      '',
-      'Negociável!',
-      '',
-      'Não iremos trocar a liga caso ela acabe ou troque de dono/nome!',
-      '',
-      '**Exemplo:**',
-      'Se você pagou para fazer partner com a sua liga BRS, mas essa liga acabou/trocou nome e você criou outra liga/servidor, não será permitido trocar o partner da BRS para a nova liga.',
-      '',
-      'Ou seja, o partner é válido apenas para a liga anunciada originalmente.',
-      '',
-      '**Duração:** 6 meses. Depois disso, o canal será apagado.'
+      'Para appeals e denúncias, utilize o servidor do STJD.'
     ].join('\n'));
 
   const menu = new StringSelectMenuBuilder()
