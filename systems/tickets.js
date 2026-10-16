@@ -183,8 +183,7 @@ async function openTicket(interaction) {
       permissionOverwrites: overwrites
     });
 
-    const ticketViewRoleIds = TICKET_VIEW_ROLE_IDS.filter(roleId => guild.roles.cache.has(roleId));
-    const roleMentions = ticketViewRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
+    const roleMentions = viewerRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
     await ticketChannel.send({
       content: roleMentions || undefined,
       embeds: [
@@ -195,7 +194,7 @@ async function openTicket(interaction) {
           .setTimestamp()
       ],
       components: [buildTicketButtons()],
-      allowedMentions: { parse: [], roles: ticketViewRoleIds }
+      allowedMentions: { parse: [], roles: viewerRoleIds }
     });
 
     await interaction.editReply({ content: `✅ Seu ticket foi criado: ${ticketChannel}` });
