@@ -3,10 +3,13 @@ const { ROSTER_CAP, FREE_AGENT_ROLE_ID, RELEASE_ANNOUNCEMENT_CHANNEL } = require
 const { pendingContracts, activeContracts, saveContracts } = require('../systems/contracts');
 const { getTransferWindow, setTransferWindow } = require('../systems/transferWindow');
 const { buildTransferWindowEmbed, buildTransferWindowSelectMenu } = require('../commands/janela');
+const { handleTicketInteraction } = require('../systems/tickets');
 
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
+    if (await handleTicketInteraction(interaction)) return;
+
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
