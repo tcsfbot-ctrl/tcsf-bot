@@ -10,12 +10,11 @@ const {
   StringSelectMenuBuilder
 } = require('discord.js');
 const {
-  ALLOWED_SANCTION_ROLES,
   CONTRACT_GUILD_ID,
   TICKET_CATEGORY_ID,
   TICKET_PANEL_CHANNEL_ID,
-  TICKET_TRANSCRIPT_CHANNEL_ID,
-  TICKET_VIEW_ROLE_IDS
+  TICKET_STAFF_ROLE_IDS,
+  TICKET_TRANSCRIPT_CHANNEL_ID
 } = require('../config/constants');
 
 const OPEN_TICKET_MENU_ID = 'ticket_open';
@@ -103,7 +102,7 @@ function getTicketMetadata(channel) {
 }
 
 function hasTicketStaffRole(member) {
-  return ALLOWED_SANCTION_ROLES.some(roleId => member.roles.cache.has(roleId));
+  return TICKET_STAFF_ROLE_IDS.some(roleId => member.roles.cache.has(roleId));
 }
 
 async function openTicket(interaction) {
@@ -127,7 +126,7 @@ async function openTicket(interaction) {
     }
 
     await guild.roles.fetch();
-    const requestedRoleIds = [...new Set([...ALLOWED_SANCTION_ROLES, ...TICKET_VIEW_ROLE_IDS])];
+    const requestedRoleIds = TICKET_STAFF_ROLE_IDS;
     const viewerRoleIds = requestedRoleIds.filter(roleId => guild.roles.cache.has(roleId));
     const missingRoles = requestedRoleIds.filter(roleId => !guild.roles.cache.has(roleId));
     if (missingRoles.length > 0) {
