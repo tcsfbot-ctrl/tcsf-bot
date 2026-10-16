@@ -126,10 +126,12 @@ async function openTicket(interaction) {
       throw new Error(`Categoria de tickets inválida: ${TICKET_CATEGORY_ID}`);
     }
 
-    const viewerRoleIds = [...new Set([...ALLOWED_SANCTION_ROLES, ...TICKET_VIEW_ROLE_IDS])];
-    const missingRoles = viewerRoleIds.filter(roleId => !guild.roles.cache.has(roleId));
+    await guild.roles.fetch();
+    const requestedRoleIds = [...new Set([...ALLOWED_SANCTION_ROLES, ...TICKET_VIEW_ROLE_IDS])];
+    const viewerRoleIds = requestedRoleIds.filter(roleId => guild.roles.cache.has(roleId));
+    const missingRoles = requestedRoleIds.filter(roleId => !guild.roles.cache.has(roleId));
     if (missingRoles.length > 0) {
-      throw new Error(`Cargos de ticket não encontrados no servidor: ${missingRoles.join(', ')}`);
+      console.warn(`Cargos de ticket ausentes; serão ignorados na criação: ${missingRoles.join(', ')}`);
     }
 
     const botMember = guild.members.me ?? await guild.members.fetchMe();
@@ -181,11 +183,12 @@ async function openTicket(interaction) {
       permissionOverwrites: overwrites
     });
 
-    const roleMentions = TICKET_VIEW_ROLE_IDS.map(roleId => `<@&${roleId}>`).join(' ');
+    const ticketViewRoleIds = TICKET_VIEW_ROLE_IDS.filter(roleId => guild.roles.cache.has(roleId));
+    const roleMentions = ticketViewRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
     await ticketChannel.send({
-      content: `${roleMentions}\n${interaction.user}, seu ticket de **${type.label}** foi aberto. A equipe responderá aqui.\n\nUse os botões abaixo para assumir ou fechar o ticket.`,
+      content: `${roleMentions ? `${roleMentions}\n` : ''}${interaction.user}, seu ticket de **${type.label}** foi aberto. A equipe responderá aqui.\n\nUse os botões abaixo para assumir ou fechar o ticket.`,
       components: [buildTicketButtons()],
-      allowedMentions: { parse: [], roles: TICKET_VIEW_ROLE_IDS, users: [interaction.user.id] }
+      allowedMentions: { parse: [], roles: ticketViewRoleIds, users: [interaction.user.id] }
     });
 
     await interaction.editReply({ content: `✅ Seu ticket foi criado: ${ticketChannel}` });
