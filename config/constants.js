@@ -50,14 +50,22 @@ const ALLOWED_SANCTION_ROLES = [
 ];
 
 const ALLOWED_TEAM_ROLE_NAMES = [
-  'Palmeiras',
-  'Cruzeiro',
-  'Atletico MG',
   'Flamengo',
-  'Coritiba',
+  'Palmeiras',
+  'Grêmio',
   'Internacional',
+  'Corinthians',
+  'Boca Juniors',
+  'River Plate',
+  'Liga de Quito',
+  'Atlético Mineiro',
+  'Ceará',
+  'Cruzeiro',
   'São Paulo',
-  'Santos'
+  'Santos',
+  'Santa Fe',
+  'Barcelona de Guayaquil',
+  'Nacional'
 ];
 const ROSTER_CAP = 20;
 
