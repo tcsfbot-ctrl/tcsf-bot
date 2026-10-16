@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { loadContracts } = require('../systems/contracts');
 const { loadTransferWindow } = require('../systems/transferWindow');
+const { loadTicketSystem } = require('../systems/tickets');
 
 module.exports = {
   name: Events.ClientReady,
@@ -13,6 +14,12 @@ module.exports = {
     // Carregar sistemas
     loadContracts(client);
     loadTransferWindow();
+    try {
+      await loadTicketSystem(client);
+      console.log('✅ Painel de tickets carregado!');
+    } catch (error) {
+      console.error('❌ Erro ao carregar painel de tickets:', error);
+    }
 
     client.user.setPresence({
       activities: [{ name: 'TCSF - Season 1', type: 0 }],
