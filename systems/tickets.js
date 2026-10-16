@@ -186,9 +186,16 @@ async function openTicket(interaction) {
     const ticketViewRoleIds = TICKET_VIEW_ROLE_IDS.filter(roleId => guild.roles.cache.has(roleId));
     const roleMentions = ticketViewRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
     await ticketChannel.send({
-      content: `${roleMentions ? `${roleMentions}\n` : ''}${interaction.user}, seu ticket de **${type.label}** foi aberto. A equipe responderá aqui.\n\nUse os botões abaixo para assumir ou fechar o ticket.`,
+      content: roleMentions || undefined,
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0x5865f2)
+          .setTitle(`Ticket • ${type.label}`)
+          .setDescription(`${interaction.user} abriu este ticket. A equipe responderá aqui.\n\nUse os botões abaixo para assumir ou fechar o ticket.`)
+          .setTimestamp()
+      ],
       components: [buildTicketButtons()],
-      allowedMentions: { parse: [], roles: ticketViewRoleIds, users: [interaction.user.id] }
+      allowedMentions: { parse: [], roles: ticketViewRoleIds }
     });
 
     await interaction.editReply({ content: `✅ Seu ticket foi criado: ${ticketChannel}` });
