@@ -10,11 +10,13 @@ const {
   StringSelectMenuBuilder
 } = require('discord.js');
 const {
+  ALLOWED_SANCTION_ROLES,
   CONTRACT_GUILD_ID,
   TICKET_CATEGORY_ID,
+  TICKET_CLOSE_OVERRIDE_ROLE_IDS,
   TICKET_PANEL_CHANNEL_ID,
-  TICKET_STAFF_ROLE_IDS,
-  TICKET_TRANSCRIPT_CHANNEL_ID
+  TICKET_TRANSCRIPT_CHANNEL_ID,
+  TICKET_VIEW_ROLE_IDS
 } = require('../config/constants');
 
 const OPEN_TICKET_MENU_ID = 'ticket_open';
@@ -102,7 +104,7 @@ function getTicketMetadata(channel) {
 }
 
 function hasTicketStaffRole(member) {
-  return TICKET_STAFF_ROLE_IDS.some(roleId => member.roles.cache.has(roleId));
+  return ALLOWED_SANCTION_ROLES.some(roleId => member.roles.cache.has(roleId));
 }
 
 async function openTicket(interaction) {
@@ -126,7 +128,7 @@ async function openTicket(interaction) {
     }
 
     await guild.roles.fetch();
-    const requestedRoleIds = TICKET_STAFF_ROLE_IDS;
+    const requestedRoleIds = [...new Set([...ALLOWED_SANCTION_ROLES, ...TICKET_VIEW_ROLE_IDS])];
     const viewerRoleIds = requestedRoleIds.filter(roleId => guild.roles.cache.has(roleId));
     const missingRoles = requestedRoleIds.filter(roleId => !guild.roles.cache.has(roleId));
     if (missingRoles.length > 0) {
@@ -182,7 +184,8 @@ async function openTicket(interaction) {
       permissionOverwrites: overwrites
     });
 
-    const roleMentions = viewerRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
+    const pingRoleIds = viewerRoleIds.filter(roleId => !TICKET_CLOSE_OVERRIDE_ROLE_IDS.includes(roleId));
+    const roleMentions = pingRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
     await ticketChannel.send({
       content: roleMentions || undefined,
       embeds: [
@@ -193,7 +196,7 @@ async function openTicket(interaction) {
           .setTimestamp()
       ],
       components: [buildTicketButtons()],
-      allowedMentions: { parse: [], roles: viewerRoleIds }
+      allowedMentions: { parse: [], roles: pingRoleIds }
     });
 
     await interaction.editReply({ content: `✅ Seu ticket foi criado: ${ticketChannel}` });
@@ -273,16 +276,25 @@ async function buildTranscript(channel) {
 }
 
 async function closeTicket(interaction) {
-  if (!interaction.guild || !interaction.channel || !getTicketMetadata(interaction.channel)) {
+  const metadata = interaction.channel ? getTicketMetadata(interaction.channel) : null;
+  if (!interaction.guild || !interaction.channel || !metadata) {
     return interaction.reply({ content: 'Este canal não é um ticket válido.', flags: MessageFlags.Ephemeral });
   }
   if (!hasTicketStaffRole(interaction.member)) {
     return interaction.reply({ content: '❌ Você não tem permissão para fechar tickets.', flags: MessageFlags.Ephemeral });
   }
+  const canCloseClaimedTicket = TICKET_CLOSE_OVERRIDE_ROLE_IDS.some(roleId =>
+    interaction.member.roles.cache.has(roleId)
+  );
+  if (metadata.claimedBy && metadata.claimedBy !== interaction.user.id && !canCloseClaimedTicket) {
+    return interaction.reply({
+      content: `❌ Apenas quem assumiu este ticket (<@${metadata.claimedBy}>) pode fechá-lo.`,
+      flags: MessageFlags.Ephemeral
+    });
+  }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const channel = interaction.channel;
-  const metadata = getTicketMetadata(channel);
 
   try {
     const transcriptChannel = await interaction.guild.channels.fetch(TICKET_TRANSCRIPT_CHANNEL_ID);
