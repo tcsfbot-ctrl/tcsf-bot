@@ -6,9 +6,20 @@ const { getTeamRoles } = require('../systems/teamRoles');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('force-release')
-    .setDescription('Forçar sua saída do time atual'),
+    .setDescription('Forçar sua saída do time atual')
+    .addStringOption(option =>
+      option.setName('motivo')
+        .setDescription('Explique o motivo da sua saída do time')
+        .setRequired(true)
+        .setMaxLength(1000)
+    ),
   async execute(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const reason = interaction.options.getString('motivo', true).trim();
+
+    if (!reason) {
+      return interaction.editReply({ content: '❌ Você precisa informar o motivo da saída.' });
+    }
 
     const isAllowedChannel = ALLOWED_RELEASE_CHANNELS.includes(interaction.channelId) ||
       ALLOWED_RELEASE_CHANNELS.includes(interaction.channel?.parentId);
@@ -83,7 +94,8 @@ module.exports = {
       .setDescription(`${interaction.user} (**${interaction.user.username}**) forçou sua saída de **${teamRole.name}**.`)
       .addFields(
         { name: 'Jogador', value: `${interaction.user.username} (${interaction.user.id})`, inline: true },
-        { name: 'Time', value: teamRole.name, inline: true }
+        { name: 'Time', value: teamRole.name, inline: true },
+        { name: 'Motivo informado', value: reason, inline: false }
       )
       .setFooter({ text: 'TCSF • Force Release' })
       .setTimestamp();
