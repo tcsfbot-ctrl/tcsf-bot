@@ -47,18 +47,21 @@ module.exports = {
     }
 
     const teamRole = teamRoles[0];
-    const managerRoleName = `Manager ${teamRole.name}`;
-    const managerRole = interaction.guild.roles.cache.find(role => role.name === managerRoleName);
+    const managerRole = interaction.guild.roles.cache.find(role =>
+      role.name.toLowerCase() === 'manager'
+    );
     if (!managerRole) {
       return interaction.editReply({
-        content: `❌ Não encontrei o cargo **${managerRoleName}**. Avise a administração para configurar o cargo do manager.`
+        content: '❌ Não encontrei o cargo **Manager**. Avise a administração para configurar o cargo do manager.'
       });
     }
 
     let managers;
     try {
       await interaction.guild.members.fetch();
-      managers = [...managerRole.members.values()];
+      managers = [...managerRole.members.values()].filter(manager =>
+        manager.roles.cache.has(teamRole.id)
+      );
     } catch (error) {
       console.error(`❌ Erro ao buscar os managers de ${teamRole.name}:`, error);
       return interaction.editReply({
@@ -68,7 +71,7 @@ module.exports = {
 
     if (managers.length === 0) {
       return interaction.editReply({
-        content: `❌ O cargo **${managerRoleName}** não possui nenhum membro. Avise a administração do servidor.`
+        content: `❌ Não encontrei nenhum membro com os cargos **Manager** e **${teamRole.name}**. Avise a administração do servidor.`
       });
     }
 
