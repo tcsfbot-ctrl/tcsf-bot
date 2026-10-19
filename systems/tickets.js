@@ -19,6 +19,12 @@ const {
   TICKET_VIEW_ROLE_IDS
 } = require('../config/constants');
 
+const TICKET_STAFF_ROLE_IDS = [...new Set([
+  ...ALLOWED_SANCTION_ROLES,
+  ...TICKET_CLOSE_OVERRIDE_ROLE_IDS,
+  ...TICKET_VIEW_ROLE_IDS
+])];
+
 const OPEN_TICKET_MENU_ID = 'ticket_open';
 const CLAIM_TICKET_BUTTON_ID = 'ticket_claim';
 const CLOSE_TICKET_BUTTON_ID = 'ticket_close';
@@ -104,7 +110,7 @@ function getTicketMetadata(channel) {
 }
 
 function hasTicketStaffRole(member) {
-  return ALLOWED_SANCTION_ROLES.some(roleId => member.roles.cache.has(roleId));
+  return TICKET_STAFF_ROLE_IDS.some(roleId => member.roles.cache.has(roleId));
 }
 
 async function openTicket(interaction) {
@@ -128,7 +134,7 @@ async function openTicket(interaction) {
     }
 
     await guild.roles.fetch();
-    const requestedRoleIds = [...new Set([...ALLOWED_SANCTION_ROLES, ...TICKET_VIEW_ROLE_IDS])];
+    const requestedRoleIds = TICKET_STAFF_ROLE_IDS;
     const viewerRoleIds = requestedRoleIds.filter(roleId => guild.roles.cache.has(roleId));
     const missingRoles = requestedRoleIds.filter(roleId => !guild.roles.cache.has(roleId));
     if (missingRoles.length > 0) {
