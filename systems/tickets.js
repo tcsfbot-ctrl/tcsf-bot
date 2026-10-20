@@ -109,6 +109,30 @@ function getTicketMetadata(channel) {
   return { ownerId: match[1], type: match[2], claimedBy: match[3] === 'none' ? null : match[3] };
 }
 
+function isTicketChannel(channel) {
+  const metadata = channel ? getTicketMetadata(channel) : null;
+  return Boolean(
+    channel?.type === ChannelType.GuildText &&
+    channel.guildId === CONTRACT_GUILD_ID &&
+    channel.parentId === TICKET_CATEGORY_ID &&
+    metadata &&
+    TICKET_TYPES.some(type => type.value === metadata.type)
+  );
+}
+
+async function addMemberToTicket(channel, member) {
+  if (!isTicketChannel(channel)) {
+    throw new Error('O canal informado não é um ticket válido.');
+  }
+
+  await channel.permissionOverwrites.edit(member.id, {
+    ViewChannel: true,
+    SendMessages: true,
+    ReadMessageHistory: true,
+    AttachFiles: true
+  }, { reason: `Adicionado ao ticket por ${member.user.tag}` });
+}
+
 function hasTicketStaffRole(member) {
   return TICKET_STAFF_ROLE_IDS.some(roleId => member.roles.cache.has(roleId));
 }
@@ -350,4 +374,4 @@ async function handleTicketInteraction(interaction) {
   return false;
 }
 
-module.exports = { loadTicketSystem, handleTicketInteraction };
+module.exports = { loadTicketSystem, handleTicketInteraction, isTicketChannel, addMemberToTicket };
