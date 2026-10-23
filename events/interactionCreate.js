@@ -1,6 +1,6 @@
 const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
-const { ROSTER_CAP, FREE_AGENT_ROLE_ID, RELEASE_ANNOUNCEMENT_CHANNEL } = require('../config/constants');
-const { pendingContracts, activeContracts, saveContracts } = require('../systems/contracts');
+const { ROSTER_CAP, EMERGENCY_CONTRACT_LIMIT, FREE_AGENT_ROLE_ID, RELEASE_ANNOUNCEMENT_CHANNEL } = require('../config/constants');
+const { pendingContracts, activeContracts, saveContracts, countActiveEmergencyContracts } = require('../systems/contracts');
 const { getTransferWindow, setTransferWindow } = require('../systems/transferWindow');
 const { buildTransferWindowEmbed, buildTransferWindowSelectMenu } = require('../commands/janela');
 const { handleTicketInteraction } = require('../systems/tickets');
@@ -44,6 +44,19 @@ module.exports = {
       if (action === 'accept') {
         const teamRole = interaction.guild.roles.cache.get(contractData.teamRoleId);
         const rosterCount = teamRole ? teamRole.members.size : 0;
+
+        if (contractData.emergency === true && countActiveEmergencyContracts(contractData.teamRoleId) >= EMERGENCY_CONTRACT_LIMIT) {
+          pendingContracts.delete(contractId);
+          const disabledRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('disabled_accept').setLabel('Accept').setStyle(ButtonStyle.Success).setDisabled(true),
+            new ButtonBuilder().setCustomId('disabled_reject').setLabel('Reject').setStyle(ButtonStyle.Danger).setDisabled(true)
+          );
+
+          return interaction.editReply({
+            content: `❌ O time **${contractData.teamName}** já atingiu o limite de **${EMERGENCY_CONTRACT_LIMIT} contratos de emergência ativos**. Este contrato não pode ser aceito.`,
+            components: [disabledRow]
+          });
+        }
 
         if (rosterCount >= ROSTER_CAP) {
           const disabledRow = new ActionRowBuilder().addComponents(
