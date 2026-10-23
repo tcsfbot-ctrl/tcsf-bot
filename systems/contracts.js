@@ -22,6 +22,7 @@ function saveContracts() {
       teamRoleId: c.teamRoleId,
       position: c.position,
       role: c.role,
+      emergency: c.emergency === true,
       proposedAt: c.proposedAt,
       signedAt: c.signedAt,
       channelId: c.channelId,
@@ -70,10 +71,17 @@ function generateContractId(signeeId, contractorId) {
   return `T${timestamp}_${random}`;
 }
 
+function countActiveEmergencyContracts(teamRoleId) {
+  return [...activeContracts.values()].filter(contract =>
+    contract.emergency === true && contract.teamRoleId === teamRoleId
+  ).length;
+}
+
 module.exports = {
   pendingContracts,
   activeContracts,
   saveContracts,
   loadContracts,
-  generateContractId
+  generateContractId,
+  countActiveEmergencyContracts
 };
